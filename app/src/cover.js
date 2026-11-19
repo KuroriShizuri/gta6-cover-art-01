@@ -21,13 +21,13 @@ export function layoutPanels(layout, w, h) {
     const heroH = areaH * 0.58, rowY = y0 + heroH + gw;
     const cw = (x1 - x0 - 2 * gw) / 3;
     return [
-      // Hero: contained (full photo, sharp) on a colour-matched matte.
-      // Cover-fill would force a 2.6x upscale of the 720px sample and
-      // cannot keep both the hat and the face in a ~4:1 frame, so the photo
-      // stays contained; the matte (the photo's average colour, darkened)
-      // with feathered photo edges replaces the old blurred bars, which
-      // read as a rendering error.
-      { x: x0, y: y0, w: x1 - x0, h: heroH, contain: true },
+      // Hero: a two-photo diptych (the hero panel's photo on the left, the
+      // second panel's photo on the right), each cover-fit into its half.
+      // A single cover-fill of the 720px sample cannot keep both the hat
+      // and the face in a ~4:1 frame (a ~177px slice), and the contained
+      // photo left the hero mostly empty fill that read as a placeholder.
+      // Each half is ~2:1, so a cover-fit keeps the hat and the face.
+      { x: x0, y: y0, w: x1 - x0, h: heroH, heroDuo: true },
       { x: x0, y: rowY, w: cw, h: y1 - rowY },
       { x: x0 + cw + gw, y: rowY, w: cw, h: y1 - rowY },
       { x: x0 + 2 * (cw + gw), y: rowY, w: cw, h: y1 - rowY },
@@ -243,6 +243,80 @@ function drawPhotoPanel(ctx, rect, panel, grade) {
   ctx.strokeRect(x + 2, y + 2, w - 4, h - 4);
 }
 
+// Draws one photo cover-fit into `rect` with the grade wash/tint/shade
+// (no frame — the caller draws the frame). `f` is the panel framing
+// {zoom, ox, oy, anchorTop, wash, tintBoost}.
+function drawCoverFit(ctx, rect, img, f, grade) {
+  const { x, y, w, h } = rect;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  if (img) {
+    const zoom = f.zoom || 1;
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    const ox = ((f.ox || 0) / 100) * w;
+    const oy = ((f.oy || 0) / 100) * h;
+    const base = Math.max(w / iw, h / ih) * zoom;
+    const pw = iw * base, ph = ih * base;
+    const yOff = f.anchorTop ? 0 : (h - ph) / 2;
+    ctx.drawImage(img, x + (w - pw) / 2 + ox, y + yOff + oy, pw, ph);
+  }
+  const wash = ctx.createLinearGradient(x, y, x + w * 0.25, y + h);
+  wash.addColorStop(0, grade.wash[0]);
+  wash.addColorStop(1, grade.wash[1]);
+  ctx.save();
+  ctx.globalAlpha = f.wash ?? 1;
+  ctx.fillStyle = wash;
+  ctx.fillRect(x, y, w, h);
+  ctx.restore();
+  if (grade.tint) {
+    ctx.fillStyle = grade.tint;
+    ctx.fillRect(x, y, w, h);
+  }
+  if (f.tintBoost) {
+    for (let k = 0; k < f.tintBoost; k++) {
+      ctx.fillStyle = grade.tint;
+      ctx.fillRect(x, y, w, h);
+    }
+  }
+  const shade = ctx.createLinearGradient(x, y + h * 0.55, x, y + h);
+  shade.addColorStop(0, 'rgba(10,2,24,0)');
+  shade.addColorStop(1, 'rgba(10,2,24,0.35)');
+  ctx.fillStyle = shade;
+  ctx.fillRect(x, y, w, h);
+  ctx.restore();
+}
+
+// The strip hero as a two-photo diptych: the hero panel's photo on the
+// left (its own framing), the second panel's photo on the right. The right
+// half uses the second panel's hero framing (heroZoom/heroOx/heroOy) when
+// present, so it can be a different crop from the second panel's own
+// bottom-row framing. One outer frame, so the hero reads as one panel.
+function drawHeroDuo(ctx, rect, leftPanel, rightPanel, grade) {
+  const { x, y, w, h } = rect;
+  const gap = Math.max(4, Math.min(w, h) * 0.008);
+  const hw = (w - gap) / 2;
+  drawCoverFit(ctx, { x, y, w: hw, h }, leftPanel.img, leftPanel, grade);
+  const rf = {
+    zoom: rightPanel.heroZoom ?? rightPanel.zoom,
+    ox: rightPanel.heroOx ?? rightPanel.ox,
+    oy: rightPanel.heroOy ?? rightPanel.oy,
+    anchorTop: rightPanel.anchorTop,
+    wash: rightPanel.wash,
+    tintBoost: rightPanel.tintBoost,
+  };
+  drawCoverFit(ctx, { x: x + hw + gap, y, w: hw, h }, rightPanel.img, rf, grade);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x + hw, y, gap, h);
+  ctx.lineWidth = Math.max(3, Math.min(w, h) * 0.014);
+  ctx.strokeStyle = '#ffffff';
+  ctx.strokeRect(x, y, w, h);
+  ctx.lineWidth = Math.max(1, Math.min(w, h) * 0.004);
+  ctx.strokeStyle = 'rgba(10,2,24,0.55)';
+  ctx.strokeRect(x + 2, y + 2, w - 4, h - 4);
+}
+
 function fitFont(ctx, text, maxWidth, startSize, family) {
   let size = startSize;
   ctx.font = `${size}px ${family}`;
@@ -280,10 +354,13 @@ export function drawCover(canvas, state) {
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, h);
 
-  // Panels.
+  // Panels. The strip hero is a two-photo diptych (panels 0 and 1).
   const rects = layoutPanels(state.layout, w, h);
   const count = layoutPanelCount(state.layout);
-  for (let i = 0; i < count; i++) drawPhotoPanel(ctx, rects[i], state.panels[i], grade);
+  for (let i = 0; i < count; i++) {
+    if (state.layout === 'strip' && i === 0) drawHeroDuo(ctx, rects[0], state.panels[0], state.panels[1], grade);
+    else drawPhotoPanel(ctx, rects[i], state.panels[i], grade);
+  }
 
   // Title band: dark base, skyline, palms at both ends, retro sun peeking behind.
   ctx.fillStyle = grade.band;

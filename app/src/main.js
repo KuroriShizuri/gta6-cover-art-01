@@ -140,18 +140,19 @@ async function applyPreset(name) {
     document.querySelectorAll(`#${id} button`).forEach((x) => x.classList.toggle('on', x.dataset[key] === p[key]));
   }
   for (let i = 0; i < 4; i++) await loadSample(state.panels[i], p.samples[i]);
-  // Same layout-specific framings as the screenshot scenes: the strip hero is
-  // contained with a weaker wash, the strip's second pier panel is a closer
-  // face crop (zoom capped at 1.25 so the hat and chin both stay in frame),
-  // the split's first panel is cover-fill with an extra tint pass so its cool
-  // daylight photo reads as warm as the other panels, and its third panel is
-  // a tight face close-up panned to centre the face with margin. (The old
-  // strip hero used oy=-50, which is gone now that the hero is contained —
-  // the fit centres the photo with headroom.)
+  // Same layout-specific framings as the screenshot scenes, tuned for each
+  // preset's own photo assignment (the queen preset leads with boulevard,
+  // the 1-cover shot with pier, so the strip values differ between the two).
+  // The strip hero is a two-photo diptych (panels 0 and 1, each cover-fit
+  // into its half); the second panel carries a separate hero framing
+  // (heroZoom/heroOx/heroOy) for its hero-half crop. The split's third
+  // panel is the fishing-rod shot (ox -79 reaches the rod at the right edge
+  // of the pier photo — hence the Pan sliders now span -100..100), and its
+  // first panel is panned to ox 22 so the hat's left brim clears the frame.
   const framings = p.layout === 'strip'
-    ? [{ zoom: 1, ox: 0, oy: 0, wash: 0.45 }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.25, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.45, ox: -15, oy: -28, wash: 1, anchorTop: true }]
+    ? [{ zoom: 1, ox: 0, oy: 0, wash: 0.45, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true, heroZoom: 1, heroOx: 0, heroOy: 0, tintBoost: 1 }, { zoom: 1.15, ox: 0, oy: -22, wash: 1, anchorTop: true }, { zoom: 1.3, ox: 0, oy: 0, wash: 1, anchorTop: true }]
     : p.layout === 'split'
-      ? [{ zoom: 1, ox: 12, oy: 0, wash: 1, anchorTop: true, tintBoost: 1 }, { zoom: 1, ox: 10, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.35, ox: 18, oy: 0, wash: 1, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }]
+      ? [{ zoom: 1, ox: 22, oy: 0, wash: 1, anchorTop: true, tintBoost: 1 }, { zoom: 1, ox: 10, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.15, ox: -79, oy: 0, wash: 1, anchorTop: true, tintBoost: 1 }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }]
       : [{ zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.35, ox: 14, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.35, ox: -14, oy: 0, wash: 1, anchorTop: true }];
   state.panels.forEach((panel, i) => Object.assign(panel, framings[i]));
   redraw();
