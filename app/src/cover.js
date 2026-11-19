@@ -21,7 +21,9 @@ export function layoutPanels(layout, w, h) {
     const heroH = areaH * 0.58, rowY = y0 + heroH + gw;
     const cw = (x1 - x0 - 2 * gw) / 3;
     return [
-      { x: x0, y: y0, w: x1 - x0, h: heroH, contain: true },
+      // Hero: cover-fill (sharp photo edge to edge) with anchor-top, so the
+      // ultra-wide band is never padded with blurred backdrop bands.
+      { x: x0, y: y0, w: x1 - x0, h: heroH, cover: true },
       { x: x0, y: rowY, w: cw, h: y1 - rowY },
       { x: x0 + cw + gw, y: rowY, w: cw, h: y1 - rowY },
       { x: x0 + 2 * (cw + gw), y: rowY, w: cw, h: y1 - rowY },
@@ -137,9 +139,10 @@ function drawPhotoPanel(ctx, rect, panel, grade) {
     const ox = ((panel.ox || 0) / 100) * w;
     const oy = ((panel.oy || 0) / 100) * h;
     const ratio = (iw / ih) / (w / h);
-    if (rect.contain || ratio > 4 || ratio < 0.25) {
-      // Ultra-wide hero from a square photo: blurred cover-fill as a backdrop
-      // with the whole photo contained, so nobody's head is cropped off.
+    if (!rect.cover && (rect.contain || ratio > 4 || ratio < 0.25)) {
+      // Contained photo on a blurred cover-fill backdrop, so nobody's head is
+      // cropped off. Panels flagged cover (the strip hero) skip this and use
+      // sharp cover-fill with anchor-top instead.
       const cover = Math.max(w / iw, h / ih) * zoom;
       ctx.save();
       ctx.filter = 'blur(24px) brightness(0.6) saturate(1.3)';
