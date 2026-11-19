@@ -4,10 +4,10 @@
 // silhouettes, and bold Anton caption lettering with a gradient fill and hard outline.
 
 const GRADES = {
-  sunset: { sky: ['#1d0b3d', '#7b1e6e', '#ff5e62', '#ffb347'], sun: ['#fff3b0', '#ff9e00'], wash: ['rgba(255,110,60,0.28)', 'rgba(255,46,136,0.34)'], band: '#17082b', title: ['#ffffff', '#ffd166'], sub: '#ffe66d' },
-  neon: { sky: ['#05021a', '#2b0a5e', '#c2187a', '#00e5ff'], sun: ['#e0fbff', '#ff2e88'], wash: ['rgba(0,229,255,0.22)', 'rgba(255,46,136,0.38)'], band: '#0a0224', title: ['#ffffff', '#7df9ff'], sub: '#ff5ea8' },
-  noir: { sky: ['#0a0a0f', '#1c1c26', '#3a3a4a', '#6b6b7d'], sun: ['#e8e8e8', '#9a9aa8'], wash: ['rgba(0,0,0,0.30)', 'rgba(0,0,0,0.42)'], band: '#0b0b10', title: ['#ffffff', '#cfcfd8'], sub: '#e8e8e8' },
-  clean: { sky: ['#123a6b', '#2f7fb8', '#f2a65a', '#ffd98a'], sun: ['#fffbe8', '#ffb347'], wash: ['rgba(255,180,80,0.16)', 'rgba(255,120,60,0.18)'], band: '#10233d', title: ['#ffffff', '#ffe9a8'], sub: '#fff3c4' },
+  sunset: { sky: ['#1d0b3d', '#7b1e6e', '#ff5e62', '#ffb347'], sun: ['#fff3b0', '#ff9e00'], wash: ['rgba(255,110,60,0.28)', 'rgba(255,46,136,0.34)'], tint: 'rgba(255,110,60,0.10)', band: '#17082b', title: ['#ffffff', '#ffd166'], sub: '#ffe66d' },
+  neon: { sky: ['#05021a', '#2b0a5e', '#c2187a', '#00e5ff'], sun: ['#e0fbff', '#ff2e88'], wash: ['rgba(0,229,255,0.22)', 'rgba(255,46,136,0.38)'], tint: 'rgba(255,46,136,0.20)', band: '#0a0224', title: ['#ffffff', '#7df9ff'], sub: '#ff5ea8' },
+  noir: { sky: ['#0a0a0f', '#1c1c26', '#3a3a4a', '#6b6b7d'], sun: ['#e8e8e8', '#9a9aa8'], wash: ['rgba(0,0,0,0.30)', 'rgba(0,0,0,0.42)'], tint: 'rgba(0,0,0,0.08)', band: '#0b0b10', title: ['#ffffff', '#cfcfd8'], sub: '#e8e8e8' },
+  clean: { sky: ['#123a6b', '#2f7fb8', '#f2a65a', '#ffd98a'], sun: ['#fffbe8', '#ffb347'], wash: ['rgba(255,180,80,0.16)', 'rgba(255,120,60,0.18)'], tint: 'rgba(255,180,80,0.06)', band: '#10233d', title: ['#ffffff', '#ffe9a8'], sub: '#fff3c4' },
 };
 
 /** Panel rectangles (fractions of W/H) for each layout. The title band starts at 0.74. */
@@ -21,9 +21,11 @@ export function layoutPanels(layout, w, h) {
     const heroH = areaH * 0.58, rowY = y0 + heroH + gw;
     const cw = (x1 - x0 - 2 * gw) / 3;
     return [
-      // Hero: cover-fill (sharp photo edge to edge) with anchor-top, so the
-      // ultra-wide band is never padded with blurred backdrop bands.
-      { x: x0, y: y0, w: x1 - x0, h: heroH, cover: true },
+      // Hero: contained (full photo, sharp, on a blurred cover-fill backdrop).
+      // Cover-fill forced a 2.6x upscale of the 720px sample, so the face
+      // filled the band, the hat was cut and the picture went soft. Contain
+      // shows the whole photo with headroom; the backdrop carries the width.
+      { x: x0, y: y0, w: x1 - x0, h: heroH, contain: true },
       { x: x0, y: rowY, w: cw, h: y1 - rowY },
       { x: x0 + cw + gw, y: rowY, w: cw, h: y1 - rowY },
       { x: x0 + 2 * (cw + gw), y: rowY, w: cw, h: y1 - rowY },
@@ -32,7 +34,11 @@ export function layoutPanels(layout, w, h) {
   if (layout === 'split') {
     const cw = (x1 - x0 - 2 * gw) / 3;
     return [
-      { x: x0, y: y0, w: cw, h: y1 - y0 },
+      // First panel is a contained portrait card: the tall narrow frame would
+      // otherwise crop the subject's head against the top edge (the sample
+      // photo's hat sits at the very top of the frame). The other two panels
+      // stay full-bleed cover-fill.
+      { x: x0, y: y0, w: cw, h: y1 - y0, contain: true },
       { x: x0 + cw + gw, y: y0, w: cw, h: y1 - y0 },
       { x: x0 + 2 * (cw + gw), y: y0, w: cw, h: y1 - y0 },
     ];
@@ -117,9 +123,9 @@ function drawSkyline(ctx, x, y, w, h, color) {
     const bh = h * (0.35 + rnd() * 0.6);
     ctx.fillRect(bx, y + h - bh, bw, bh);
     // A few lit windows.
-    ctx.fillStyle = 'rgba(255,209,102,0.85)';
-    for (let k = 0; k < 4; k++) {
-      if (rnd() > 0.5) ctx.fillRect(bx + bw * (0.2 + rnd() * 0.6), y + h - bh + bh * (0.15 + rnd() * 0.6), 3, 4);
+    ctx.fillStyle = 'rgba(255,209,102,0.9)';
+    for (let k = 0; k < 6; k++) {
+      if (rnd() > 0.35) ctx.fillRect(bx + bw * (0.2 + rnd() * 0.6), y + h - bh + bh * (0.15 + rnd() * 0.6), 4, 6);
     }
     ctx.fillStyle = color;
     bx += bw + w * 0.012;
@@ -145,7 +151,7 @@ function drawPhotoPanel(ctx, rect, panel, grade) {
       // sharp cover-fill with anchor-top instead.
       const cover = Math.max(w / iw, h / ih) * zoom;
       ctx.save();
-      ctx.filter = 'blur(24px) brightness(0.6) saturate(1.3)';
+      ctx.filter = 'blur(32px) brightness(0.5) saturate(1.2)';
       ctx.drawImage(img, x + (w - iw * cover) / 2 + ox, y + (h - ih * cover) / 2 + oy, iw * cover, ih * cover);
       ctx.restore();
       const fit = Math.min(w / iw, h / ih) * zoom;
@@ -172,11 +178,22 @@ function drawPhotoPanel(ctx, rect, panel, grade) {
     ctx.fillText('ADD A PHOTO', x + w / 2, y + h * 0.86);
   }
   // Colour grade wash + bottom shade so the white panel frame reads.
+  // panel.wash scales the tint (the strip hero uses 0.45 so the wide face
+  // keeps its natural skin tones instead of going purple).
   const wash = ctx.createLinearGradient(x, y, x + w * 0.25, y + h);
   wash.addColorStop(0, grade.wash[0]);
   wash.addColorStop(1, grade.wash[1]);
+  ctx.save();
+  ctx.globalAlpha = panel.wash ?? 1;
   ctx.fillStyle = wash;
   ctx.fillRect(x, y, w, h);
+  ctx.restore();
+  // Uniform grade tint: evens out the colour temperature across panels so a
+  // cool daylight photo and a warm sunset photo read as one graded poster.
+  if (grade.tint) {
+    ctx.fillStyle = grade.tint;
+    ctx.fillRect(x, y, w, h);
+  }
   const shade = ctx.createLinearGradient(x, y + h * 0.55, x, y + h);
   shade.addColorStop(0, 'rgba(10,2,24,0)');
   shade.addColorStop(1, 'rgba(10,2,24,0.35)');
@@ -221,6 +238,7 @@ export function drawCover(canvas, state) {
   const w = canvas.width, h = canvas.height;
   const grade = GRADES[state.grade] || GRADES.sunset;
   const bandTop = 0.74 * h;
+  const bandH = h - bandTop;
 
   // Sunset / neon sky.
   const sky = ctx.createLinearGradient(0, 0, 0, h);
@@ -237,12 +255,22 @@ export function drawCover(canvas, state) {
   ctx.fillStyle = grade.band;
   ctx.fillRect(0, bandTop, w, h - bandTop);
   const bandGrad = ctx.createLinearGradient(0, bandTop, 0, h);
-  bandGrad.addColorStop(0, 'rgba(255,46,136,0.25)');
+  bandGrad.addColorStop(0, 'rgba(255,46,136,0.32)');
   bandGrad.addColorStop(0.4, 'rgba(255,46,136,0)');
   ctx.fillStyle = bandGrad;
   ctx.fillRect(0, bandTop, w, h - bandTop);
-  drawSkyline(ctx, w * 0.02, bandTop + (h - bandTop) * 0.18, w * 0.96, (h - bandTop) * 0.82, 'rgba(8,2,20,0.9)');
-  drawRetroSun(ctx, w * 0.965, bandTop + (h - bandTop) * 0.3, Math.min(w, h) * 0.045, grade);
+  // Warm horizon glow so the skyline reads instead of the band looking empty.
+  const glow = ctx.createLinearGradient(0, bandTop, 0, bandTop + bandH * 0.45);
+  glow.addColorStop(0, 'rgba(255,120,60,0.18)');
+  glow.addColorStop(1, 'rgba(255,120,60,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, bandTop, w, bandH * 0.45);
+  drawSkyline(ctx, w * 0.02, bandTop + (h - bandTop) * 0.18, w * 0.96, (h - bandTop) * 0.82, 'rgba(38,16,68,0.95)');
+  // Retro sun peeking behind the title band: kept inside the right edge with a
+  // real margin (it used to clip on narrower covers) and raised clear of the
+  // title's last letter.
+  const sunR = Math.min(w, h) * 0.04;
+  drawRetroSun(ctx, w - sunR - w * 0.02, bandTop + (h - bandTop) * 0.18, sunR, grade);
   drawPalm(ctx, w * 0.015, h * 0.995, Math.min(w, h) / 900, 'rgba(8,2,20,0.95)');
   drawPalm(ctx, w * 0.985, h * 0.995, -Math.min(w, h) / 1100, 'rgba(8,2,20,0.95)');
 
@@ -253,7 +281,6 @@ export function drawCover(canvas, state) {
   const tag = (state.tag || '').trim().toUpperCase();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  const bandH = h - bandTop;
   if (subtitle) {
     ctx.font = `700 ${Math.round(bandH * 0.13)}px system-ui, sans-serif`;
     ctx.fillStyle = grade.sub;
@@ -283,8 +310,8 @@ export function drawCover(canvas, state) {
     ctx.restore();
   }
   if (tag) {
-    ctx.font = `700 ${Math.round(bandH * 0.09)}px system-ui, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.font = `700 ${Math.round(bandH * 0.11)}px system-ui, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
     drawSpacedText(ctx, tag, cx, h - bandH * 0.06, bandH * 0.015);
   }
 

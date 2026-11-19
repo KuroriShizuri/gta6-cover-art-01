@@ -70,8 +70,8 @@ function buildPanelCards() {
       </div>
       <div class="sliders">
         <span>Zoom</span><input type="range" min="1" max="2.5" step="0.05" value="${panel.zoom}" data-k="zoom" aria-label="Zoom panel ${i + 1}">
-        <span>Pan ↔</span><input type="range" min="-50" max="50" step="1" value="${panel.ox}" data-k="ox" aria-label="Pan panel ${i + 1} horizontally">
-        <span>Pan ↕</span><input type="range" min="-50" max="50" step="1" value="${panel.oy}" data-k="oy" aria-label="Pan panel ${i + 1} vertically">
+        <span>Pan X</span><input type="range" min="-50" max="50" step="1" value="${panel.ox}" data-k="ox" aria-label="Pan panel ${i + 1} horizontally">
+        <span>Pan Y</span><input type="range" min="-50" max="50" step="1" value="${panel.oy}" data-k="oy" aria-label="Pan panel ${i + 1} vertically">
       </div>`;
     card.querySelector('input[type=file]').addEventListener('change', async (e) => {
       const file = e.target.files[0];
@@ -140,9 +140,15 @@ async function applyPreset(name) {
     document.querySelectorAll(`#${id} button`).forEach((x) => x.classList.toggle('on', x.dataset[key] === p[key]));
   }
   for (let i = 0; i < 4; i++) await loadSample(state.panels[i], p.samples[i]);
+  // Same layout-specific framings as the screenshot scenes: the strip hero is
+  // contained with a weaker wash, the split's repeated photo gets a wide shot
+  // vs a tight close-up. (The old strip hero used oy=-50, which is gone now
+  // that the hero is contained — the fit centres the photo with headroom.)
   const framings = p.layout === 'strip'
-    ? [{ zoom: 1, ox: 0, oy: 0, anchorTop: true }, { zoom: 1.3, ox: 12, oy: 0, anchorTop: true }, { zoom: 1.3, ox: -12, oy: 0, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, anchorTop: true }]
-    : [{ zoom: 1, ox: 0, oy: 0, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, anchorTop: true }, { zoom: 1.35, ox: 14, oy: 0, anchorTop: true }, { zoom: 1.35, ox: -14, oy: 0, anchorTop: true }];
+    ? [{ zoom: 1, ox: 0, oy: 0, wash: 0.45 }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.45, ox: -15, oy: -28, wash: 1, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }]
+    : p.layout === 'split'
+      ? [{ zoom: 1, ox: 0, oy: 0, wash: 1 }, { zoom: 1, ox: 10, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.35, ox: -2, oy: 0, wash: 1, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }]
+      : [{ zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.35, ox: 14, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.35, ox: -14, oy: 0, wash: 1, anchorTop: true }];
   state.panels.forEach((panel, i) => Object.assign(panel, framings[i]));
   redraw();
 }

@@ -28,13 +28,26 @@ input[type=range] { width: 100%; accent-color: #ff2e88; }
 .panel-card h3 span { color: #ffb347; }
 .panel-card .file-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .panel-card .file-row button { padding: 5px 9px; font-size: 12px; }
-.panel-card input[type=file] { font-size: 12px; max-width: 100%; }
+.panel-card input[type=file] { font-size: 12px; max-width: 100%; color: #c9b8dd; }
+/* Style the native file control as a theme button, like the Sample buttons. */
+.panel-card input[type=file]::file-selector-button { font: inherit; font-weight: 700; font-size: 12px; padding: 5px 9px; border: 1px solid #4a2f6e; border-radius: 8px; background: #2a1845; color: #f5eefc; cursor: pointer; margin-right: 8px; }
+.panel-card input[type=file]::file-selector-button:hover { border-color: #ff2e88; }
 .sliders { display: grid; grid-template-columns: 52px 1fr; gap: 4px 10px; align-items: center; font-size: 12px; color: #c9b8dd; }
 .export { font-size: 17px; padding: 14px; background: linear-gradient(90deg, #ff2e88, #ff7a18); border: 0; border-radius: 10px; }
 #status { margin: 0; min-height: 1.2em; color: #8dffc1; }
 .fine { margin: 0; font-size: 12px; color: #8d7ba3; }
 .preview { flex: 1; display: flex; justify-content: center; position: sticky; top: 24px; }
 canvas { width: min(78vh, 62vw); height: auto; box-shadow: 0 12px 44px rgba(0, 0, 0, 0.6); border-radius: 4px; background: #2b1055; }
+/* Editor screenshot: tall viewport holding the whole controls column — the
+   preview is larger and vertically centred so it does not float small in an
+   empty dark area. The controls are compacted and the status/fine print are
+   hidden so presets, caption and Export PNG all fit in one frame. */
+body.shot-editor .controls { gap: 10px; }
+body.shot-editor .group { padding: 10px; gap: 8px; }
+body.shot-editor .panel-card { padding: 8px; gap: 6px; }
+body.shot-editor .fine, body.shot-editor #status { display: none; }
+body.shot-editor .preview { align-self: stretch; align-items: center; }
+body.shot-editor canvas { width: min(86vh, 66vw); }
 body.shot-cover .controls { display: none; }
 body.shot-cover .app { padding: 0; }
 body.shot-cover .preview { position: static; }

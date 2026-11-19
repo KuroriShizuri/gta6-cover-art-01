@@ -4,6 +4,7 @@
 export async function runShot(shot, query, api) {
   const { state, loadSample, redraw, setCaption } = api;
   if (shot === 'cover') document.body.classList.add('shot-cover');
+  if (shot === 'editor') document.body.classList.add('shot-editor');
   const photo = query.get('photo') ?? 'pier';
   const other = photo === 'pier' ? 'boulevard' : 'pier';
   const layout = query.get('layout') ?? 'grid';
@@ -16,21 +17,23 @@ export async function runShot(shot, query, api) {
   const samples = [photo, other, other, photo];
   for (let i = 0; i < 4; i++) await loadSample(state.panels[i], samples[i]);
   // Give repeated photos visibly different framings, so no two panels look cloned.
-  // anchorTop keeps heads in frame on the wide/short panels.
+  // anchorTop keeps heads in frame on the wide/short panels. Each layout gets
+  // its own set: the strip hero is contained (full photo, sharp) with a weaker
+  // wash so the face keeps natural skin tones; the split's repeated woman gets
+  // a wide full-figure shot vs a tight face close-up.
   const framings = layout === 'strip'
-    ? [{ zoom: 1, ox: 0, oy: -50, anchorTop: true }, { zoom: 1.3, ox: 12, oy: 0, anchorTop: true }, { zoom: 1.3, ox: -12, oy: 0, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, anchorTop: true }]
-    : [{ zoom: 1, ox: 0, oy: 0, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, anchorTop: true }, { zoom: 1.35, ox: 14, oy: 0, anchorTop: true }, { zoom: 1.35, ox: -14, oy: 0, anchorTop: true }];
+    ? [{ zoom: 1, ox: 0, oy: 0, wash: 0.45 }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.45, ox: -15, oy: -28, wash: 1, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }]
+    : layout === 'split'
+      ? [{ zoom: 1, ox: 0, oy: 0, wash: 1 }, { zoom: 1, ox: 10, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.35, ox: -2, oy: 0, wash: 1, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }]
+      : [{ zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.35, ox: 14, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.35, ox: -14, oy: 0, wash: 1, anchorTop: true }];
   state.panels.forEach((p, i) => Object.assign(p, framings[i]));
   // Reflect the chosen layout/grade/size in the control buttons.
   for (const [key, id] of [['layout', 'layouts'], ['grade', 'grades'], ['size', 'sizes']]) {
     document.querySelectorAll(`#${id} button`).forEach((x) => x.classList.toggle('on', x.dataset[key] === state[key]));
   }
   await redraw();
-  if (shot === 'editor') {
-    // Scroll the "Photos & crop" group into view, so a panel card and its
-    // crop controls are visible in the 1280x720 editor shot (they sit below
-    // the fold otherwise). The preview stays put: it is position: sticky.
-    document.getElementById('panels').closest('.group').scrollIntoView();
-  }
+  // The editor shot shows the page from the top (presets, caption, Export PNG)
+  // — the viewport is tall enough to hold the whole controls column, and the
+  // preview is vertically centred by the shot-editor style. No scrolling.
   requestAnimationFrame(() => requestAnimationFrame(() => { window.__shotReady = true; }));
 }
