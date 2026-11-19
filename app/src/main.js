@@ -145,12 +145,16 @@ async function applyPreset(name) {
   // the 1-cover shot with pier, so the strip values differ between the two).
   // The strip hero is a two-photo diptych (panels 0 and 1, each cover-fit
   // into its half); the second panel carries a separate hero framing
-  // (heroZoom/heroOx/heroOy) for its hero-half crop. The split's third
-  // panel is the fishing-rod shot (ox -79 reaches the rod at the right edge
-  // of the pier photo — hence the Pan sliders now span -100..100), and its
+  // (heroZoom/heroOx/heroOy) for its hero-half crop. The strip's bottom row
+  // uses torso crops, not face close-ups, so no two panels read as the same
+  // photo: the woman's second appearance is a torso-and-convertible crop
+  // (oy -126 — white shirt, jeans, red car door, no face), the man's a
+  // torso/fishing crop (zoom 1.25, ox -10, oy -111 — tank top, arms, rod,
+  // reel, sea, no face). The split's third panel is the fishing-rod shot
+  // (ox -79 reaches the rod at the right edge of the pier photo), and its
   // first panel is panned to ox 22 so the hat's left brim clears the frame.
   const framings = p.layout === 'strip'
-    ? [{ zoom: 1, ox: 0, oy: 0, wash: 0.45, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true, heroZoom: 1, heroOx: 0, heroOy: 0, tintBoost: 1 }, { zoom: 1.15, ox: 0, oy: -22, wash: 1, anchorTop: true }, { zoom: 1.3, ox: 0, oy: 0, wash: 1, anchorTop: true }]
+    ? [{ zoom: 1, ox: 0, oy: 0, wash: 0.45, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true, heroZoom: 1, heroOx: 0, heroOy: 0, tintBoost: 1 }, { zoom: 1, ox: 0, oy: -126, wash: 1, anchorTop: true }, { zoom: 1.25, ox: -10, oy: -111, wash: 1, anchorTop: true }]
     : p.layout === 'split'
       ? [{ zoom: 1, ox: 22, oy: 0, wash: 1, anchorTop: true, tintBoost: 1 }, { zoom: 1, ox: 10, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.15, ox: -79, oy: 0, wash: 1, anchorTop: true, tintBoost: 1 }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }]
       : [{ zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.35, ox: 14, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.35, ox: -14, oy: 0, wash: 1, anchorTop: true }];

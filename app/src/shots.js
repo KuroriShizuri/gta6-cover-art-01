@@ -28,22 +28,28 @@ export async function runShot(shot, query, api) {
   // fit, which a single cover-fill of the ~4:1 hero could not do). The second
   // panel carries a separate hero framing (heroZoom/heroOx/heroOy) for its
   // hero-half crop, distinct from its bottom-row framing; the woman's hero
-  // crop is a tighter face-and-shoulders shot (measured: her face sits at
-  // source y≈86–241, hair top y≈58). The strip's pier close-up is loosened
-  // to zoom 1.15 for a touch more headroom (the hat sits at the very top of
-  // the source, y≈7, so the geometry caps it), and the woman's tight face is
-  // loosened to zoom 1.3 with oy -25 so her hair top and chin both stay in
-  // frame. The split's first panel is cover-fill (the tall frame crops the
-  // sides, never the top, so the hat stays in frame) with an extra tint pass
-  // so its cool daylight photo reads as warm as the other panels, panned to
-  // ox 22 so the hat's left brim clears the frame edge; its third panel is
-  // now the fishing-rod shot — the right side of the pier photo (the rod
-  // lives at source x≈438–720, the face ends at x≈436), so it shows rod +
-  // reel + sea and no face, reading as a different image. The strip's pier
-  // close-up is capped at zoom 1.25: the man's chin sits at y≈256/720,
-  // so a tighter zoom would cut it (measured, not guessed).
+  // crop is a face-and-shoulders shot loosened to heroZoom 1.15 with heroOy
+  // -14 so her hair top (source y≈58) and chin (y≈241) both clear the frame
+  // (window y≈33–265: ~25px headroom, ~25px bottom margin). The strip's
+  // bottom-middle man is NOT a face close-up: it is a torso/fishing crop
+  // (zoom 1.25, ox -10, oy -111 — window x≈130–706, y≈300–569: tank top,
+  // arms, rod, reel, railing, sea, no face), which is a clearly different
+  // region from the hero man's wide face shot and has no hat to crowd the
+  // top edge. The strip's bottom-right woman is a torso-and-convertible
+  // crop (zoom 1, oy -126 — window y≈321–576, full width: white shirt,
+  // black top, jeans, red car door, no face or hair), clearly different
+  // from the hero woman's tight face. The split's first panel is cover-fill
+  // (the tall frame crops the sides, never the top, so the hat stays in
+  // frame) with an extra tint pass so its cool daylight photo reads as warm
+  // as the other panels, panned to ox 22 so the hat's left brim clears the
+  // frame edge; its third panel is now the fishing-rod shot — the right
+  // side of the pier photo (the rod lives at source x≈438–720, the face
+  // ends at x≈436), so it shows rod + reel + sea and no face, reading as a
+  // different image. The strip's pier close-up is capped at zoom 1.25: the
+  // man's chin sits at y≈256/720, so a tighter zoom would cut it
+  // (measured, not guessed).
   const framings = layout === 'strip'
-    ? [{ zoom: 1, ox: 0, oy: 0, wash: 0.45, anchorTop: true, tintBoost: 1 }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true, heroZoom: 1.25, heroOx: -8, heroOy: -27 }, { zoom: 1.15, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.3, ox: -8, oy: -25, wash: 1, anchorTop: true }]
+    ? [{ zoom: 1, ox: 0, oy: 0, wash: 0.45, anchorTop: true, tintBoost: 1 }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true, heroZoom: 1.15, heroOx: -8, heroOy: -14 }, { zoom: 1.25, ox: -10, oy: -111, wash: 1, anchorTop: true }, { zoom: 1, ox: 0, oy: -126, wash: 1, anchorTop: true }]
     : layout === 'split'
       ? [{ zoom: 1, ox: 22, oy: 0, wash: 1, anchorTop: true, tintBoost: 1 }, { zoom: 1, ox: 10, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.15, ox: -79, oy: 0, wash: 1, anchorTop: true, tintBoost: 1 }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }]
       : [{ zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1, ox: 0, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.35, ox: 14, oy: 0, wash: 1, anchorTop: true }, { zoom: 1.35, ox: -14, oy: 0, wash: 1, anchorTop: true }];
