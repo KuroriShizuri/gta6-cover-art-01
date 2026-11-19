@@ -21,10 +21,12 @@ export function layoutPanels(layout, w, h) {
     const heroH = areaH * 0.58, rowY = y0 + heroH + gw;
     const cw = (x1 - x0 - 2 * gw) / 3;
     return [
-      // Hero: contained (full photo, sharp, on a blurred cover-fill backdrop).
-      // Cover-fill forced a 2.6x upscale of the 720px sample, so the face
-      // filled the band, the hat was cut and the picture went soft. Contain
-      // shows the whole photo with headroom; the backdrop carries the width.
+      // Hero: contained (full photo, sharp) on a colour-matched matte.
+      // Cover-fill would force a 2.6x upscale of the 720px sample and
+      // cannot keep both the hat and the face in a ~4:1 frame, so the photo
+      // stays contained; the matte (the photo's average colour, darkened)
+      // with feathered photo edges replaces the old blurred bars, which
+      // read as a rendering error.
       { x: x0, y: y0, w: x1 - x0, h: heroH, contain: true },
       { x: x0, y: rowY, w: cw, h: y1 - rowY },
       { x: x0 + cw + gw, y: rowY, w: cw, h: y1 - rowY },
@@ -34,11 +36,12 @@ export function layoutPanels(layout, w, h) {
   if (layout === 'split') {
     const cw = (x1 - x0 - 2 * gw) / 3;
     return [
-      // First panel is a contained portrait card: the tall narrow frame would
-      // otherwise crop the subject's head against the top edge (the sample
-      // photo's hat sits at the very top of the frame). The other two panels
-      // stay full-bleed cover-fill.
-      { x: x0, y: y0, w: cw, h: y1 - y0, contain: true },
+      // First panel is a cover-fill portrait card: the tall narrow frame
+      // crops the sides, not the top, so the subject's hat (at the very top
+      // of the sample) stays in frame with headroom; the framing pans (ox)
+      // to centre the face. The old contained card left ~60% of the panel
+      // as blurred bars with hard edges.
+      { x: x0, y: y0, w: cw, h: y1 - y0 },
       { x: x0 + cw + gw, y: y0, w: cw, h: y1 - y0 },
       { x: x0 + 2 * (cw + gw), y: y0, w: cw, h: y1 - y0 },
     ];
@@ -146,16 +149,38 @@ function drawPhotoPanel(ctx, rect, panel, grade) {
     const oy = ((panel.oy || 0) / 100) * h;
     const ratio = (iw / ih) / (w / h);
     if (!rect.cover && (rect.contain || ratio > 4 || ratio < 0.25)) {
-      // Contained photo on a blurred cover-fill backdrop, so nobody's head is
-      // cropped off. Panels flagged cover (the strip hero) skip this and use
-      // sharp cover-fill with anchor-top instead.
-      const cover = Math.max(w / iw, h / ih) * zoom;
-      ctx.save();
-      ctx.filter = 'blur(32px) brightness(0.5) saturate(1.2)';
-      ctx.drawImage(img, x + (w - iw * cover) / 2 + ox, y + (h - ih * cover) / 2 + oy, iw * cover, ih * cover);
-      ctx.restore();
+      // Contained photo on a colour-matched matte, not a blurred copy of
+      // the photo: the blur produced two mismatched hard-edged bars (one
+      // warm, one cool) that read as a rendering error. The matte is the
+      // photo's own average colour darkened, and the photo's left/right
+      // edges feather into it, so the panel reads as one designed
+      // background instead of a sharp photo pasted over blur.
       const fit = Math.min(w / iw, h / ih) * zoom;
-      ctx.drawImage(img, x + (w - iw * fit) / 2 + ox, y + (h - ih * fit) / 2 + oy, iw * fit, ih * fit);
+      const fw = iw * fit, fh = ih * fit;
+      const dx = x + (w - fw) / 2 + ox, dy = y + (h - fh) / 2 + oy;
+      const avg = document.createElement('canvas');
+      avg.width = 1; avg.height = 1;
+      const actx = avg.getContext('2d');
+      actx.drawImage(img, 0, 0, 1, 1);
+      const d = actx.getImageData(0, 0, 1, 1).data;
+      ctx.fillStyle = `rgb(${d[0] * 0.45 | 0},${d[1] * 0.45 | 0},${d[2] * 0.45 | 0})`;
+      ctx.fillRect(x, y, w, h);
+      // Feathered photo: opaque in the middle, fading to transparent at the
+      // left/right edges so it dissolves into the matte.
+      const off = document.createElement('canvas');
+      off.width = Math.max(1, Math.ceil(fw)); off.height = Math.max(1, Math.ceil(fh));
+      const octx = off.getContext('2d');
+      octx.drawImage(img, 0, 0, off.width, off.height);
+      const f = 0.12;
+      const mask = octx.createLinearGradient(0, 0, off.width, 0);
+      mask.addColorStop(0, 'rgba(0,0,0,0)');
+      mask.addColorStop(f, 'rgba(0,0,0,1)');
+      mask.addColorStop(1 - f, 'rgba(0,0,0,1)');
+      mask.addColorStop(1, 'rgba(0,0,0,0)');
+      octx.globalCompositeOperation = 'destination-in';
+      octx.fillStyle = mask;
+      octx.fillRect(0, 0, off.width, off.height);
+      ctx.drawImage(off, dx, dy);
     } else {
       const base = Math.max(w / iw, h / ih) * zoom;
       const pw = iw * base, ph = ih * base;
@@ -193,6 +218,15 @@ function drawPhotoPanel(ctx, rect, panel, grade) {
   if (grade.tint) {
     ctx.fillStyle = grade.tint;
     ctx.fillRect(x, y, w, h);
+  }
+  // Extra tint passes for a panel whose photo runs cooler than the grade
+  // (a blue daylight photo in a warm/pink grade): each pass compounds the
+  // grade tint so the panel reads as part of the same graded set.
+  if (panel.tintBoost) {
+    for (let k = 0; k < panel.tintBoost; k++) {
+      ctx.fillStyle = grade.tint;
+      ctx.fillRect(x, y, w, h);
+    }
   }
   const shade = ctx.createLinearGradient(x, y + h * 0.55, x, y + h);
   shade.addColorStop(0, 'rgba(10,2,24,0)');
